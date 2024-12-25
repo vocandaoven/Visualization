@@ -551,6 +551,10 @@ export default {
           {
             name: '高考人数',
             type: 'line',
+            label: {
+              show: true,
+              position: 'top',
+            },
             data: [], // Data for the selected province
           }
         ]
@@ -615,6 +619,10 @@ export default {
           {
             name: this.selectedProvince1,
             type: 'bar',
+            label: {
+              show: true,
+              position: 'top',
+            },
             data: data1,
             itemStyle: {
               color: '#007bff',
@@ -623,6 +631,10 @@ export default {
           {
             name: this.selectedProvince2,
             type: 'bar',
+            label: {
+              show: true,
+              position: 'top',
+            },
             data: data2,
             itemStyle: {
               color: '#6610f2',
@@ -961,6 +973,10 @@ export default {
           {
             name: this.selectedProvince1,
             type: 'bar',
+            label: {
+              show: true,
+              position: 'top',
+            },
             data: data1,
             itemStyle: {
               color: '#007bff',
@@ -969,6 +985,10 @@ export default {
           {
             name: this.selectedProvince2,
             type: 'bar',
+            label: {
+              show: true,
+              position: 'top',
+            },
             data: data2,
             itemStyle: {
               color: '#6610f2',
