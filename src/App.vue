@@ -1,11 +1,12 @@
 <template>
   <div id="app" style="display: flex; flex-direction: column; height: 100vh;">
-    <div style="position: absolute; top: 50px; right: 200px; display: flex; flex-direction: column; align-items: center; z-index: 1000;">
+    <div style="position: absolute; top: 50px; right: 100px; display: flex; flex-direction: column; align-items: center; z-index: 1000;">
       <button class="map-button" @click="setMapData('total')">所有高校</button>
       <button class="map-button" @click="setMapData('985')">985高校</button>
       <button class="map-button" @click="setMapData('211')">211高校</button>
       <button class="map-button" @click="setMapData('bk')">本科</button>
       <button class="map-button" @click="setMapData('zk')">专科</button>
+      <button class="map-button" @click="switchMode">模式更改</button>
     </div>
     <!-- 上层布局，包含左上和右上的地图 -->
     <div style="display: flex; flex: 1;">
@@ -14,12 +15,34 @@
       <!-- 右上地图 -->
       <div id="right-map" style="flex: 1; height: 100%;"></div>
     </div>
+    <div class="container" style="display: flex; flex: 0.1">
+      <div class="select-container" style="margin-right: 20px;">
+        <label for="province1">选择第一个省份：</label>
+        <select id="province1" v-model="selectedProvince1" class="select-box">
+          <option disabled value="">请选择省份</option>
+          <option v-for="province in Object.keys(provinceData)" :key="province" :value="province">{{ province }}</option>
+        </select>
+      </div>
+
+      <div class="select-container" style="margin-right: 20px;">
+        <label for="province2">选择第二个省份：</label>
+        <select id="province2" v-model="selectedProvince2" class="select-box">
+          <option disabled value="">请选择省份</option>
+          <option v-for="province in Object.keys(provinceData)" :key="province" :value="province">{{ province }}</option>
+        </select>
+      </div>
+
+      <div style="margin-right: 10px;">
+        <button class="compare-button" @click="compareProvinces">对比数据</button>
+      </div>
+    </div>
     <!-- 下层布局，包含左下图表 -->
-    <div style="flex: 1; display: flex;">
+    <div style="flex: 0.9; display: flex;">
       <!-- 左下图表 -->
       <div id="chart-container" style="flex: 1; height: 100%;"></div>
       <div id="line-chart-container" style="flex: 1; height: 100%;"></div>
-      <div id="pie-chart-container" style="flex: 2; height: 100%;"></div>
+      <div id="compare-container" style="flex: 1; height: 100%;"></div>
+      <div id="pie-chart-container" style="flex: 1; height: 100%;"></div>
     </div>
   </div>
 </template>
@@ -32,8 +55,11 @@ export default {
   data() {
     return {
       chartInstance: null,
+      selectedProvince1: '',
+      selectedProvince2: '',
       mapChartInstance: null,
       mapChartInstance1: null,
+      compare: null,
       lineChartInstance: null,
       pieChart: null,
       selectedProvince: '',
@@ -237,6 +263,40 @@ export default {
             { name: '西藏', value: 3.9 }
           ]
       },
+      universityData: [
+        { name: '北京', value: 92 },
+        { name: '天津', value: 56 },
+        { name: '河北', value: 124},
+        { name: '山西', value: 82},
+        { name: '内蒙古', value: 54},
+        { name: '辽宁', value: 114},
+        { name: '吉林', value: 66},
+        { name: '黑龙江', value: 78},
+        { name: '上海', value: 64 },
+        { name: '江苏', value: 168},
+        { name: '浙江', value: 109},
+        { name: '安徽', value: 121},
+        { name: '福建', value: 89},
+        { name: '江西', value: 106},
+        { name: '山东', value: 153},
+        { name: '河南', value: 156},
+        { name: '湖北', value: 130},
+        { name: '湖南', value: 130},
+        { name: '广东', value: 160},
+        { name: '广西', value: 85},
+        { name: '海南', value: 21},
+        { name: '重庆', value: 70},
+        { name: '四川', value: 134},
+        { name: '贵州', value: 75},
+        { name: '云南', value: 82},
+        { name: '西藏', value: 7},
+        { name: '陕西', value: 97},
+        { name: '甘肃', value: 49},
+        { name: '青海', value: 12},
+        { name: '宁夏', value: 20},
+        { name: '新疆', value: 55},
+      ],
+      mapState: true,
       tmp: ''
     };
   },
@@ -245,48 +305,19 @@ export default {
     this.initMap1();
     this.initChart();
     this.initPieChart();
+    this.initcompareChart();
     this.initLineChart();
   },
   methods: {
     initMap1() {
       this.mapChartInstance1 = echarts.init(document.getElementById('right-map'));
-      const chinaMap = require('echarts/map/json/china.json');
+      const chinaMap = require('./assets/china.json');
       echarts.registerMap('china', chinaMap);
 
       // 高校数量数据
-    const universityData = [
-      { name: '北京', value: 92 },
-      { name: '天津', value: 56 },
-      { name: '河北', value: 124},
-      { name: '山西', value: 82},
-      { name: '内蒙古', value: 54},
-      { name: '辽宁', value: 114},
-      { name: '吉林', value: 66},
-      { name: '黑龙江', value: 78},
-      { name: '上海', value: 64 },
-      { name: '江苏', value: 168},
-      { name: '浙江', value: 109},
-      { name: '安徽', value: 121},
-      { name: '福建', value: 89},
-      { name: '江西', value: 106},
-      { name: '山东', value: 153},
-      { name: '河南', value: 156},
-      { name: '湖北', value: 130},
-      { name: '湖南', value: 130},
-      { name: '广东', value: 160},
-      { name: '广西', value: 85},
-      { name: '海南', value: 21},
-      { name: '重庆', value: 70},
-      { name: '四川', value: 134},
-      { name: '贵州', value: 75},
-      { name: '云南', value: 82},
-      { name: '西藏', value: 7},
-      { name: '陕西', value: 97},
-      { name: '甘肃', value: 49},
-      { name: '青海', value: 12},
-      { name: '宁夏', value: 20},
-      { name: '新疆', value: 55},
-    ];
+    this.universityData.sort(function(a, b){
+      return a.value - b.value;
+    });
 
     // 配置项
     const option = {
@@ -307,13 +338,13 @@ export default {
       visualMap: {
         min: 0,
         max: 200, // 根据高校数量设置最大值
-        left: 'left',
+        left: 'right',
         top: 'bottom',
         text: ['多', '少'], // 文本说明
         calculable: true,
         inRange: {
           color: ['#e0ffff', '#ff6e00'] // 颜色渐变范围
-        }
+        },
       },
       series: [
         {
@@ -325,7 +356,8 @@ export default {
             show: true,
             formatter: '{b}'
           },
-          data: universityData // 数据数组
+          universalTransition: true,
+          data: this.universityData // 数据数组
         }
       ]
     };
@@ -344,7 +376,7 @@ export default {
     initMap() {
     this.mapChartInstance = echarts.init(document.getElementById('left-map'));
 
-    const chinaMap = require('echarts/map/json/china.json');
+    const chinaMap = require('./assets/china.json');
     echarts.registerMap('china', chinaMap);
 
     // 时间轴年份
@@ -375,7 +407,7 @@ export default {
         visualMap: {
           min: 0,
           max: 150,
-          left: 'left',
+          left: 'right',
           top: 'bottom',
           text: ['高', '低'],
           calculable: true,
@@ -527,6 +559,79 @@ export default {
       this.lineChartInstance.setOption(option);
       this.updateLineChart('北京');
     },
+    initcompareChart() {
+      // Initialize the line chart
+      this.compare = echarts.init(document.getElementById('compare-container'));
+      const categories = ['985', '211', 'bk', 'zk', 'total'];
+      const data1 = categories.map(category => this.provinceData['北京'][category]);
+      const data2 = categories.map(category => this.provinceData['河北'][category]);
+      
+      const option = {
+        title: {
+          text: `${this.selectedProvince1}与${this.selectedProvince2}高校数据对比`,
+          left: 'center',
+          textStyle: {
+            color: '#333',
+            fontSize: 18,
+            fontWeight: 'normal',
+          },
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'shadow'
+          },
+          formatter: function (params) {
+            let result = params[0].name + '<br/>';
+            params.forEach(function (item) {
+              result += `${item.seriesName}: ${item.value}<br/>`;
+            });
+            return result;
+          }
+        },
+        legend: {
+          data: ['北京', '河北'],
+          top: 'bottom',
+        },
+        xAxis: {
+          type: 'category',
+          data: ['985', '211', '本科', '专科', '总数'],
+          axisLine: {
+            lineStyle: {
+              color: '#555',
+            },
+          },
+        },
+        yAxis: {
+          type: 'value',
+          name: '数量',
+          axisLine: {
+            lineStyle: {
+              color: '#555',
+            },
+          },
+        },
+        series: [
+          {
+            name: this.selectedProvince1,
+            type: 'bar',
+            data: data1,
+            itemStyle: {
+              color: '#007bff',
+            },
+          },
+          {
+            name: this.selectedProvince2,
+            type: 'bar',
+            data: data2,
+            itemStyle: {
+              color: '#6610f2',
+            },
+          }
+        ],
+      };
+      this.compare.setOption(option);
+    },
     updateLineChart(provinceName) {
       // Fetch data for the province across years
       const years = Object.keys(this.gaokaoData);
@@ -536,10 +641,10 @@ export default {
         return provinceData ? provinceData.value : 0;
       });
 
-      // const rawMinValue = Math.min(...data);
-      // const rawMaxValue = Math.max(...data);
-      // const minValue = Math.floor(rawMinValue / 10) * 10; // 向下取整到十位
-      // const maxValue = Math.ceil(rawMaxValue / 10) * 10;  // 向上取整到十位
+      const rawMinValue = Math.min(...data);
+      const rawMaxValue = Math.max(...data);
+      const minValue = Math.floor(rawMinValue / 10) * 10; // 向下取整到十位
+      const maxValue = Math.ceil(rawMaxValue / 10) * 10;  // 向上取整到十位
       const growthRates = data.map((value, index) => {
         if (index === 0) return 'N/A'; // 第一年没有增长率
         const previousValue = data[index - 1];
@@ -556,8 +661,8 @@ export default {
         yAxis: {
           type: 'value',
           name: '人数 (万)',
-          min: 0, // 动态设置最小值
-          max: 140, // 动态设置最大值
+          min: maxValue, // 动态设置最小值
+          max: minValue, // 动态设置最大值
         },
         series: [
           {
@@ -661,22 +766,46 @@ export default {
           }));
           maxVal = 200;
       }
-      this.mapChartInstance1.setOption({
-        series: [{
-          data: data
-        }],
-        visualMap: {
-          min: minVal - minVal,
-          max: maxVal, // 根据高校数量设置最大值
-          left: 'left',
-          top: 'bottom',
-          text: ['多', '少'], // 文本说明
-          calculable: true,
-          inRange: {
-            color: ['#e0ffff', '#ff6e00'] // 颜色渐变范围
-          }
-        },
+      data.sort(function(a,b){
+        return a.value - b.value;
       });
+      if(this.mapState === true){
+        this.mapChartInstance1.setOption({
+          series: [{
+            data: data
+          }],
+          visualMap: {
+            min: minVal - minVal,
+            max: maxVal, // 根据高校数量设置最大值
+            left: 'right',
+            top: 'bottom',
+            text: ['多', '少'], // 文本说明
+            calculable: true,
+            inRange: {
+              color: ['#e0ffff', '#ff6e00'] // 颜色渐变范围
+            }
+          },
+        });
+      }
+      else{
+        this.mapChartInstance1.setOption({
+          series: [{
+            data: data
+          }],
+          xAxis: {
+            type: 'value'
+          },
+          yAxis: {
+            type: 'category',
+            axisLabel: {
+              rotate: 0
+            },
+            data: data.map(function (item) {
+              return item.name;
+            })
+          },
+        });
+      }
     },
     getExtremes(type) {
       let minVal = Infinity;
@@ -695,11 +824,232 @@ export default {
 
       return { minVal, maxVal };
     },
+    switchMode() {
+      const option = this.mapChartInstance1.getOption();
+      const data = option.series[0].data;
+      const barOption = {
+        title: {
+          text: '中国高校数量分布',
+          left: 'center',
+        },
+        xAxis: {
+          type: 'value'
+        },
+        yAxis: {
+          type: 'category',
+          axisLabel: {
+            rotate: 0
+          },
+          data: data.map(function (item) {
+            return item.name;
+          })
+        },
+        animationDurationUpdate: 1000,
+        series: {
+          type: 'bar',
+          id: 'population',
+          data: data,
+          universalTransition: true
+        }
+      };
+      const mapOption = {
+        title: {
+            text: '中国高校数量分布',  // 标题文本
+            left: 'center',  // 标题居中
+            top: 30,         // 标题距离顶部的距离
+            textStyle: {
+              fontSize: 20,  // 字体大小
+              fontWeight: 'bold', // 字体加粗
+              color: '#333'  // 字体颜色
+            }
+          },
+        tooltip: {
+          trigger: 'item',
+          formatter: '{b}<br/>高校数量: {c}'
+        },
+        visualMap: {
+          min: data[0].value,
+          max: data[data.length - 1].value, // 根据高校数量设置最大值
+          left: 'right',
+          top: 'bottom',
+          text: ['多', '少'], // 文本说明
+          calculable: true,
+          inRange: {
+            color: ['#e0ffff', '#ff6e00'] // 颜色渐变范围
+          },
+        },
+        series: [
+          {
+            name: '高校数量',
+            type: 'map',
+            mapType: 'china', // 指定中国地图
+            roam: true, // 是否可缩放、拖拽
+            label: {
+              show: true,
+              formatter: '{b}'
+            },
+            animationDurationUpdate: 1000,
+            universalTransition: true,
+            data: data // 数据数组
+          }
+        ]
+      };
+      if(this.mapState === true){
+        this.mapChartInstance1.setOption(barOption, true);
+        this.mapState = false;
+      }
+      else{
+        this.mapChartInstance1.setOption(mapOption, true);
+        this.mapState = true;
+      }
+    },
+    compareProvinces() {
+      if (!this.selectedProvince1 || !this.selectedProvince2) {
+        console.error('请选择两个省份进行对比');
+        return;
+      }
+      const categories = ['985', '211', 'bk', 'zk', 'total'];
+      const data1 = categories.map(category => this.provinceData[this.selectedProvince1][category]);
+      const data2 = categories.map(category => this.provinceData[this.selectedProvince2][category]);
+      
+      const option = {
+        title: {
+          text: `${this.selectedProvince1}与${this.selectedProvince2}高校数据对比`,
+          left: 'center',
+          textStyle: {
+            color: '#333',
+            fontSize: 18,
+            fontWeight: 'normal',
+          },
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'shadow'
+          },
+          formatter: function (params) {
+            let result = params[0].name + '<br/>';
+            params.forEach(function (item) {
+              result += `${item.seriesName}: ${item.value}<br/>`;
+            });
+            return result;
+          }
+        },
+        legend: {
+          data: [this.selectedProvince1, this.selectedProvince2],
+          top: 'bottom',
+        },
+        xAxis: {
+          type: 'category',
+          data: ['985', '211', '本科', '专科', '总数'],
+          axisLine: {
+            lineStyle: {
+              color: '#555',
+            },
+          },
+        },
+        yAxis: {
+          type: 'value',
+          name: '数量',
+          axisLine: {
+            lineStyle: {
+              color: '#555',
+            },
+          },
+        },
+        series: [
+          {
+            name: this.selectedProvince1,
+            type: 'bar',
+            data: data1,
+            itemStyle: {
+              color: '#007bff',
+            },
+          },
+          {
+            name: this.selectedProvince2,
+            type: 'bar',
+            data: data2,
+            itemStyle: {
+              color: '#6610f2',
+            },
+          }
+        ],
+      };
+
+      this.compare.setOption(option);
+    },
+    getDataForProvince(province) {
+      let data = {};
+      data = {
+        '985': this.provinceData[province]['985'],
+        '211': this.provinceData[province]['211'],
+        'bk': this.provinceData[province]['bk'],
+        'zk': this.provinceData[province]['zk'],
+        'total': this.provinceData[province]['total']
+      };
+      return data;
+    }
   }
 };
 </script>
 
 <style>
+.container {
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  width: 50%;
+  margin: auto;
+  margin-top: 20px; /* Adjust as needed */
+}
+
+.select-container {
+  margin: 10px 0;
+  justify-content: center;
+  align-items: center;
+}
+
+.select-box {
+  padding: 8px 16px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #333;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.select-box:hover {
+  background-color: #f9f9f9;
+}
+
+.select-box:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.compare-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.compare-button:hover {
+  background-color: #0056b3;
+}
+
+.compare-button:active {
+  transform: translateY(1px);
+}
 .map-button {
   padding: 8px 16px; /* Increased padding for larger buttons */
   margin: 10px 0; /* Increased margin between buttons */
